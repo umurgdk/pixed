@@ -1,0 +1,3 @@
+  Write make task to embed shaders
+    Learn how to run task for all collections
+    Learn how to use static variables from other c sources
