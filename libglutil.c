@@ -70,10 +70,26 @@ glutil_shader_uniform2f(GLuint shader, const char *name, GLfloat x, GLfloat y)
   glUniform2f(location, x, y);
 }
 
-static void APIENTRY glutil_debug_cl(unsigned int id, unsigned int category, unsigned int severity, unsigned int length, int _s, const char* message, const void* userParam) {
+inline
+void 
+_check_shader_link(GLuint program)
+{
+  GLint success;
+  GLchar infoLog[512];
+
+  glGetProgramiv(program, GL_LINK_STATUS, &success);
+  if (!success) {
+    glGetProgramInfoLog(program, 512, 0, infoLog);
+    printf("libglutil::shader_link::error %s\n", infoLog);
+  }
+}
+
+void
+glutil_debug_cl(unsigned int id, unsigned int category, unsigned int severity, unsigned int length, int _s, const char* message, const void* userParam)
+{
   GLenum source = category;
   GLenum type = category;
-  char * msg = message;
+  const char * msg = message;
   char * sourceString;
   char * typeString;
   char * severityString;
@@ -174,18 +190,4 @@ static void APIENTRY glutil_debug_cl(unsigned int id, unsigned int category, uns
       msg, sourceString, typeString, severityString, id);
 
   fflush(stdout);
-}
-
-inline
-void 
-_check_shader_link(GLuint program)
-{
-  GLint success;
-  GLchar infoLog[512];
-
-  glGetProgramiv(program, GL_LINK_STATUS, &success);
-  if (!success) {
-    glGetProgramInfoLog(program, 512, 0, infoLog);
-    printf("libglutil::shader_link::error %s\n", infoLog);
-  }
 }

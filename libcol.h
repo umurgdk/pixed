@@ -12,4 +12,3 @@ typedef struct _lookup_table {
 lookup_table *uint_lookup_table_new(uint8_t, uint8_t);
 lookup_table *uint_lookup_table_find(lookup_table *, uint8_t);
 lookup_table *uint_lookup_table__add(lookup_table *, uint8_t, uint8_t);
-

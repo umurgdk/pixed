@@ -1,0 +1,8 @@
+.DS_Store
+.vscode
+pixed.dSYM
+shader_compiler.dSYM
+shader_compiler
+*.o
+pixed
+shaders.h

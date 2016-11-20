@@ -5,7 +5,7 @@ OUT_DIR=build
 all: pixed
 
 pixed: libpixed.o libcol.o shaders.h libglutil.o
-	$(CC) pixed.c libpixed.o libcol.o libglutil.o `pkg-config --cflags --libs glew glfw3` $(CFLAGS) -o pixed
+	$(CC) pixed.c libpixed.o libcol.o libglutil.o `pkg-config --cflags --libs glew glfw3` $(CFLAGS) -o pixed -framework OpenGL
 
 shaders.h: shader_compiler
 	./shader_compiler > shaders.h
@@ -23,5 +23,6 @@ libcol.o: libcol.c
 	$(CC) -c $(CFLAGS) libcol.c
 
 clean:
+	rm shader_compiler
 	rm shaders.h
 	rm *.o pixed
