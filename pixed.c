@@ -626,43 +626,43 @@ graphics_center_document()
 GLFWwindow *
 window_create(int width, int height)
 {
-	GLFWwindow *window;
+  GLFWwindow *window;
 
-	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-	glfwWindowHint(GLFW_SAMPLES, 4);
+  glfwInit();
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+  glfwWindowHint(GLFW_SAMPLES, 4);
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
-	window = glfwCreateWindow(width, height, "Snake", NULL, NULL);
-	if (window == NULL)
-	{
-		fprintf(stderr, "Failed to create GLFW window!\n");
-		glfwTerminate();
-		exit(EXIT_FAILURE);
-	}
+  window = glfwCreateWindow(width, height, "Snake", NULL, NULL);
+  if (window == NULL)
+  {
+    fprintf(stderr, "Failed to create GLFW window!\n");
+    glfwTerminate();
+    exit(EXIT_FAILURE);
+  }
 
-	glfwMakeContextCurrent(window);
+  glfwMakeContextCurrent(window);
 
-	glewExperimental = GL_TRUE;
-	GLenum err = glewInit();
-	if (err != GLEW_OK)
-	{
-		fprintf(stderr, "Failed to initialize GLEW!\n");
-		glfwTerminate();
-		exit(EXIT_FAILURE);
-	}
+  glewExperimental = GL_TRUE;
+  GLenum err = glewInit();
+  if (err != GLEW_OK)
+  {
+    fprintf(stderr, "Failed to initialize GLEW!\n");
+    glfwTerminate();
+    exit(EXIT_FAILURE);
+  }
 
-	glfwSwapInterval(1);
+  glfwSwapInterval(1);
 
-	// Set OpenGL settings
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnable(GL_PROGRAM_POINT_SIZE);
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
+  // Set OpenGL settings
+  glEnableClientState(GL_VERTEX_ARRAY);
+  glEnable(GL_PROGRAM_POINT_SIZE);
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
 
   // Set GLFW callbacks
   glfwSetFramebufferSizeCallback(window, window_reshape_cb);
@@ -687,7 +687,7 @@ window_create(int width, int height)
     
   glViewport(0, 0, _width, _height);
 
-	return window;
+  return window;
 }
 
 void window_reshape_cb(GLFWwindow* window, int width, int height)
