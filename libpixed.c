@@ -55,9 +55,8 @@ pixed_document_read_file(const char *file_name)
 	FILE *file = fopen(file_name, "rb");
 	PixedDocument *document = 0;
 
-	if (!file) {
+	if (!file)
 		return 0;
-	}
 
 	// Read PiXd magic header
 	char magic[4];
@@ -164,9 +163,8 @@ int read_uint32_big_endian(FILE *file, uint32_t *value)
 {
 	char buf[4];
 
-	if (fread(buf, 1, 4, file) < 4) {
+	if (fread(buf, 1, 4, file) < 4)
 		return -1;
-	}
 
 	*value = (buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + buf[3];
 	return 0;
