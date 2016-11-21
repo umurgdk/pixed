@@ -8,7 +8,6 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include "libcol.h"
 #include "libpixed.h"
 #include "libglutil.h"
 #include "shaders.h"
@@ -22,20 +21,19 @@
 #define PIXEL_UNIFORM_ZOOM     "zoom"
 #define PIXEL_UNIFORM_VIEWPORT "viewport"
 
-#define TOOL_IDLE 0
-#define TOOL_PAN  1
+#define TOOL_IDLE  0
+#define TOOL_PAN   1
+#define TOOL_BRUSH 2
 #define TOOL_MAX  (TOOL_PAN + 1)
 
 /*
  * Forward declarations
  */
-typedef struct pixed_document pixed_document;
-
 typedef struct {
   GLuint document_vao;
   GLuint document_vbo;
   GLuint pixel_shader;
-} graphics_context;
+} GraphicsContext;
 
 typedef struct _key_event {
   int key;
@@ -44,22 +42,22 @@ typedef struct _key_event {
   int mode;
 
   struct _key_event *next;
-} key_event;
+} KeyEvent;
 
 typedef struct {
-  key_event *head;
-  key_event *last;
-} key_event_buffer;
+  KeyEvent *head;
+  KeyEvent *last;
+} KeyEventBuffer;
 
 typedef enum {
   MOUSE_DOWN,
   MOUSE_UP,
   MOUSE_MOVE,
   MOUSE_SCROLL
-} mouse_event_action;
+} MouseEventAction;
 
 typedef struct _mouse_event {
-  mouse_event_action action;
+  MouseEventAction action;
 
   int button;
   int mods;
@@ -67,12 +65,12 @@ typedef struct _mouse_event {
   int y;
 
   struct _mouse_event *next;
-} mouse_event;
+} MouseEvent;
 
 typedef struct {
-  mouse_event *head;
-  mouse_event *last;
-} mouse_event_buffer;
+  MouseEvent *head;
+  MouseEvent *last;
+} MouseEventBuffer;
 
 typedef struct _tool {
   int   id;
@@ -80,23 +78,23 @@ typedef struct _tool {
   bool  wants_destroy;
 
   bool  (*initialize)(struct _tool *);
-  bool  (*on_key_down)(struct _tool *, key_event *);
-  bool  (*on_key_up)(struct _tool *, key_event *);
-  bool  (*on_key_repeat)(struct _tool *, key_event *);
-  bool  (*on_mouse_down)(struct _tool *, mouse_event *);
-  bool  (*on_mouse_up)(struct _tool *, mouse_event *);
-  bool  (*on_mouse_move)(struct _tool *, mouse_event *);
+  bool  (*on_key_down)(struct _tool *, KeyEvent *);
+  bool  (*on_key_up)(struct _tool *, KeyEvent *);
+  bool  (*on_key_repeat)(struct _tool *, KeyEvent *);
+  bool  (*on_mouse_down)(struct _tool *, MouseEvent *);
+  bool  (*on_mouse_up)(struct _tool *, MouseEvent *);
+  bool  (*on_mouse_move)(struct _tool *, MouseEvent *);
   bool  (*destroy)(struct _tool *);
-} tool;
+} Tool;
 
 typedef struct {
-  pixed_document   *document;
-  graphics_context *graphics;
-  tool             *active_tool;  
+  PixedDocument    *document;
+  GraphicsContext  *graphics;
+  Tool             *active_tool;  
   float             zoom;     // Size of a pixel in pixels
   float             pan_x;
   float             pan_y;
-} pixed_editor;
+} PixedEditor;
 
 typedef struct {
   float start_x;
@@ -104,52 +102,52 @@ typedef struct {
   float editor_start_x;
   float editor_start_y;
   bool  mouse_dragging;
-} tool_pan_state;
+} ToolPanState;
 
-pixed_editor   *pixed_editor_new(void);
-void            pixed_editor_free(void);
-void            pixed_editor_set_document(pixed_document *);
-void            pixed_editor_dispatch_tool(void);
+PixedEditor *pixed_editor_new(void);
+void         pixed_editor_free(void);
+void         pixed_editor_set_document(PixedDocument *);
+void         pixed_editor_dispatch_tool(void);
 
-void            input_key_event_push(int key, int scancode, int action, int mode);
-key_event      *input_key_event_peek(void);
-void            input_key_event_consume(void);
+void         input_key_event_push(int key, int scancode, int action, int mode);
+KeyEvent    *input_key_event_peek(void);
+void         input_key_event_consume(void);
 
-void            input_mouse_event_push(mouse_event_action action, int x, int y, int button, int mods);
-mouse_event    *input_mouse_event_peek(void);
-void            input_mouse_event_consume(void);
+void         input_mouse_event_push(MouseEventAction action, int x, int y, int button, int mods);
+MouseEvent  *input_mouse_event_peek(void);
+void         input_mouse_event_consume(void);
 
-void            input_system_initialize(void);
-void            input_system_destroy(void);
+void         input_system_initialize(void);
+void         input_system_destroy(void);
 
-bool            tool_pan_initialize(tool *);
-bool            tool_pan_on_key_up(tool *, key_event *);
-bool            tool_pan_on_mouse_down(tool *, mouse_event *);
-bool            tool_pan_on_mouse_move(tool *, mouse_event *);
-bool            tool_pan_on_mouse_up(tool *, mouse_event *);  
-bool            tool_pan_destroy(tool *);
+bool         tool_pan_initialize(Tool *);
+bool         tool_pan_on_key_up(Tool *, KeyEvent *);
+bool         tool_pan_on_mouse_down(Tool *, MouseEvent *);
+bool         tool_pan_on_mouse_move(Tool *, MouseEvent *);
+bool         tool_pan_on_mouse_up(Tool *, MouseEvent *);  
+bool         tool_pan_destroy(Tool *);
 
-void            graphics_init(void);
-void            graphics_render(void);
-void            graphics_center_document(void);
-void            graphics_log_cb(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
+void         graphics_init(void);
+void         graphics_render(void);
+void         graphics_center_document(void);
+void         graphics_log_cb(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
 
-GLFWwindow     *window_create(int, int);
-void            window_reshape_cb(GLFWwindow*, int, int);
-void            window_key_cb(GLFWwindow*, int, int, int, int);
-void            window_mouse_move_cb(GLFWwindow *, double, double);
-void            window_mouse_btn_cb(GLFWwindow *, int, int, int);
+GLFWwindow  *window_create(int, int);
+void         window_reshape_cb(GLFWwindow*, int, int);
+void         window_key_cb(GLFWwindow*, int, int, int, int);
+void         window_mouse_move_cb(GLFWwindow *, double, double);
+void         window_mouse_btn_cb(GLFWwindow *, int, int, int);
 
 /*
  * Globals
  */
 GLFWwindow *window;
-pixed_editor *editor;
-key_event_buffer *keyboard_buffer;
-mouse_event_buffer *mouse_buffer;
+PixedEditor *editor;
+KeyEventBuffer *keyboard_buffer;
+MouseEventBuffer *mouse_buffer;
 
 /* id, state, wants_destroy, initialize, on_key_down, on_key_up, on_key_repeat, on_mouse_down, on_mouse_up, on_mouse_move, destroy */
-static tool tool_lookup[TOOL_MAX] = {
+static Tool tool_lookup[TOOL_MAX] = {
   { TOOL_IDLE, 0, false, 0, 0, 0, 0, 0, 0, 0, 0 },
   { TOOL_PAN, 0, false, tool_pan_initialize, 0, tool_pan_on_key_up, 0, tool_pan_on_mouse_down, tool_pan_on_mouse_up, tool_pan_on_mouse_move, tool_pan_destroy }
 };
@@ -157,13 +155,13 @@ static tool tool_lookup[TOOL_MAX] = {
 /*
  * Function implementations
  */
-pixed_editor *
+PixedEditor *
 pixed_editor_new()
 {
-  pixed_editor * editor = malloc(sizeof(pixed_editor));
+  PixedEditor * editor = malloc(sizeof(PixedEditor));
   editor->document = 0;
   editor->active_tool = &tool_lookup[TOOL_IDLE];
-  editor->graphics = malloc(sizeof(graphics_context));
+  editor->graphics = malloc(sizeof(GraphicsContext));
   editor->zoom = 10.0f;
   editor->pan_x = 0;
   editor->pan_y = 0;
@@ -179,7 +177,7 @@ pixed_editor_free()
 }
 
 void
-pixed_editor_set_document(pixed_document *document)
+pixed_editor_set_document(PixedDocument *document)
 {
   // TODO: Check for already opened document and ask if there are unsaved changes!
   editor->document = document;
@@ -188,10 +186,10 @@ pixed_editor_set_document(pixed_document *document)
 void
 pixed_editor_dispatch_tool()
 {
-  key_event *key_e = input_key_event_peek();
-  mouse_event *mouse_e = input_mouse_event_peek();
-  tool *active_tool = editor->active_tool;
-  tool *new_tool = 0;
+  KeyEvent *key_e = input_key_event_peek();
+  MouseEvent *mouse_e = input_mouse_event_peek();
+  Tool *active_tool = editor->active_tool;
+  Tool *new_tool = 0;
 
   // Handle key event
   if (key_e) {
@@ -284,7 +282,7 @@ pixed_editor_dispatch_tool()
 void
 input_key_event_push(int key, int scancode, int action, int mode)
 {
-  key_event *key_e = malloc(sizeof(key_event));
+  KeyEvent *key_e = malloc(sizeof(KeyEvent));
   if (!key_e) {
     perror("ERROR: Allocating key event failed");
     return;
@@ -306,7 +304,7 @@ input_key_event_push(int key, int scancode, int action, int mode)
 }
 
 inline
-key_event *
+KeyEvent *
 input_key_event_peek()
 {
   return keyboard_buffer->head; 
@@ -320,7 +318,7 @@ input_key_event_consume()
     return;
   }
 
-  key_event *current = keyboard_buffer->head;
+  KeyEvent *current = keyboard_buffer->head;
   if (keyboard_buffer->head && keyboard_buffer->head->next){
     keyboard_buffer->head = keyboard_buffer->head->next;
   } else {
@@ -332,9 +330,9 @@ input_key_event_consume()
 }
 
 void
-input_mouse_event_push(mouse_event_action action, int x, int y, int button, int mods)
+input_mouse_event_push(MouseEventAction action, int x, int y, int button, int mods)
 {
-  mouse_event *mouse_e = malloc(sizeof(mouse_event));
+  MouseEvent *mouse_e = malloc(sizeof(MouseEvent));
   if (!mouse_e) {
     perror("ERROR: Allocating key event failed");
     return;
@@ -357,7 +355,7 @@ input_mouse_event_push(mouse_event_action action, int x, int y, int button, int 
 }
 
 inline
-mouse_event *
+MouseEvent *
 input_mouse_event_peek()
 {
   return mouse_buffer->head;
@@ -371,7 +369,7 @@ input_mouse_event_consume()
     return;
   }
 
-  mouse_event *current = mouse_buffer->head;
+  MouseEvent *current = mouse_buffer->head;
   if (mouse_buffer->head && mouse_buffer->head->next) {
     mouse_buffer->head = mouse_buffer->head->next;
   } else {
@@ -385,11 +383,11 @@ input_mouse_event_consume()
 void
 input_system_initialize()
 {
-  keyboard_buffer = malloc(sizeof(key_event_buffer));
+  keyboard_buffer = malloc(sizeof(KeyEventBuffer));
   keyboard_buffer->head = 0;
   keyboard_buffer->last = 0;
 
-  mouse_buffer = malloc(sizeof(mouse_event_buffer));
+  mouse_buffer = malloc(sizeof(MouseEventBuffer));
   mouse_buffer->head = 0;
   mouse_buffer->last = 0;
 }
@@ -398,8 +396,8 @@ void
 input_system_destroy()
 {
   // Free keyboard buffer
-  key_event *key_tmp = 0;
-  key_event *key_e = keyboard_buffer->head;
+  KeyEvent *key_tmp = 0;
+  KeyEvent *key_e = keyboard_buffer->head;
   
   while (key_e != 0) {
     key_tmp = key_e->next;
@@ -410,8 +408,8 @@ input_system_destroy()
   keyboard_buffer->last = 0;
 
   // Free mouse buffer
-  mouse_event *mouse_tmp = 0;
-  mouse_event *mouse_e = mouse_buffer->head;
+  MouseEvent *mouse_tmp = 0;
+  MouseEvent *mouse_e = mouse_buffer->head;
 
   while (mouse_e != 0) {
     mouse_tmp = mouse_e->next;
@@ -423,9 +421,9 @@ input_system_destroy()
 }
 
 bool
-tool_pan_initialize(tool *pan)
+tool_pan_initialize(Tool *pan)
 {
-  tool_pan_state *state = malloc(sizeof(tool_pan_state));
+  ToolPanState *state = malloc(sizeof(ToolPanState));
   if (!state) {
     perror("ERROR: Pan tool initialization failed");
     return false;
@@ -447,7 +445,7 @@ tool_pan_initialize(tool *pan)
 }
 
 bool
-tool_pan_on_key_up(tool *pan, key_event *key_e)
+tool_pan_on_key_up(Tool *pan, KeyEvent *key_e)
 {
   if (key_e->key == GLFW_KEY_SPACE) {
     pan->wants_destroy = true;
@@ -458,13 +456,13 @@ tool_pan_on_key_up(tool *pan, key_event *key_e)
 }
 
 bool
-tool_pan_on_mouse_down(tool *pan, mouse_event *mouse_e)
+tool_pan_on_mouse_down(Tool *pan, MouseEvent *mouse_e)
 {
   /* Pan tool only checks for left mouse button */
   if (mouse_e->button != GLFW_MOUSE_BUTTON_LEFT)
     return false;
 
-  tool_pan_state *state = (tool_pan_state *)pan->state;
+  ToolPanState *state = (ToolPanState *)pan->state;
   if (!state) {
     printf("ERROR: Pan tool expecting state but got null!\n");
     return false;
@@ -480,9 +478,9 @@ tool_pan_on_mouse_down(tool *pan, mouse_event *mouse_e)
 }
 
 bool
-tool_pan_on_mouse_move(tool *pan, mouse_event *mouse_e)
+tool_pan_on_mouse_move(Tool *pan, MouseEvent *mouse_e)
 {
-  tool_pan_state *state = (tool_pan_state *)pan->state;
+  ToolPanState *state = (ToolPanState *)pan->state;
   if (!state) {
     printf("ERROR: Pan tool expecting state but got null!\n");
     return false;
@@ -507,12 +505,12 @@ tool_pan_on_mouse_move(tool *pan, mouse_event *mouse_e)
 }
 
 bool
-tool_pan_on_mouse_up(tool *pan, mouse_event *mouse_e)
+tool_pan_on_mouse_up(Tool *pan, MouseEvent *mouse_e)
 {
   if (mouse_e->button != GLFW_MOUSE_BUTTON_LEFT)
     return false;
 
-  tool_pan_state *state = (tool_pan_state *)pan->state;
+  ToolPanState *state = (ToolPanState *)pan->state;
   if (!state) {
     printf("ERROR: Pan tool expecting state but got null!\n");
     return false;
@@ -524,9 +522,9 @@ tool_pan_on_mouse_up(tool *pan, mouse_event *mouse_e)
 
 
 bool
-tool_pan_destroy(tool *pan)
+tool_pan_destroy(Tool *pan)
 {
-  tool_pan_state *state = (tool_pan_state *)pan->state;
+  ToolPanState *state = (ToolPanState *)pan->state;
   if (!state) {
     printf("ERROR: Pan tool destroy failed because state is null!\n");
     return false;
@@ -547,8 +545,8 @@ graphics_init()
   GLuint pixel_geom = glutil_shader_compile(shader_pixel_geom, GL_GEOMETRY_SHADER);
   GLuint pixel_frag = glutil_shader_compile(shader_pixel_frag, GL_FRAGMENT_SHADER);
 
-  graphics_context *ctx = editor->graphics;
-  pixed_document *document = editor->document;
+  GraphicsContext *ctx = editor->graphics;
+  PixedDocument *document = editor->document;
 
   ctx->pixel_shader = glutil_shader_compile_prog3(pixel_vert, pixel_frag, pixel_geom);
 
@@ -729,7 +727,7 @@ int main(int argvc, char **argv)
 
   editor = pixed_editor_new();
 
-  pixed_document *document = pixed_document_new("Untitled", 16, 16);
+  PixedDocument *document = pixed_document_new("Untitled", 16, 16);
   pixed_editor_set_document(document);
 
   pixed_document_set_pixel(editor->document, 0, 0, 0xff0000ff);
@@ -753,4 +751,3 @@ int main(int argvc, char **argv)
   glfwTerminate();
   return 0;
 }
-

@@ -8,10 +8,10 @@
 int read_uint32_big_endian(FILE *, uint32_t *);
 int write_uint32_big_endian(FILE *, uint32_t);
 
-struct pixed_document *
+PixedDocument *
 pixed_document_new(const char *name, uint32_t width, uint32_t height)
 {
-	struct pixed_document *document = malloc(sizeof(struct pixed_document));
+	PixedDocument *document = malloc(sizeof(PixedDocument));
 	if (!document)
 		return 0;
 
@@ -39,21 +39,21 @@ pixed_document_new(const char *name, uint32_t width, uint32_t height)
 }
 
 void
-pixed_document_free(struct pixed_document *document)
+pixed_document_free(PixedDocument *document)
 {
 	free(document->name);
 	free(document->canvas);
 	free(document);
 }
 
-struct pixed_document *
+PixedDocument *
 pixed_document_read_file(const char *file_name)
 {
 	if (strlen(file_name) <= 0)
 		return 0;
 
 	FILE *file = fopen(file_name, "rb");
-	struct pixed_document *document = 0;
+	PixedDocument *document = 0;
 
 	if (!file) {
 		return 0;
@@ -87,15 +87,6 @@ pixed_document_read_file(const char *file_name)
 		return 0;
 	}
 
-//	int i = 0;
-//	for (; i < pixels_length; i++) {
-//		if (read_uint32_big_endian(file, &canvas[i]) != 0) {
-//			fclose(file);
-//			free(canvas);
-//			return 0;
-//		}
-//	}
-
 	document = pixed_document_new(file_name, width, height);
 
 	uint32_t pixels_length = width * height;
@@ -118,7 +109,7 @@ pixed_document_read_file(const char *file_name)
 }
 
 int
-pixed_document_write_file(struct pixed_document *document, char *file_name)
+pixed_document_write_file(PixedDocument *document, char *file_name)
 {
 	if (!document)
 		return -1;
@@ -157,7 +148,7 @@ pixed_document_write_file(struct pixed_document *document, char *file_name)
 }
 
 int
-pixed_document_resize(struct pixed_document *document, int width, int height)
+pixed_document_resize(PixedDocument *document, int width, int height)
 {
 	if (!document)
 		return -1;
@@ -192,4 +183,3 @@ int write_uint32_big_endian(FILE * file, uint32_t number)
 
 	return fwrite(bytes, sizeof(char), 4, file);
 }
-
