@@ -32,7 +32,7 @@ char *read_file(const char *file_name)
   int len = ftell(file);
   fseek(file, SEEK_SET, 0);
 
-  char *buffer = (char *)malloc(sizeof(char) * (len + 1));
+  char *buffer = malloc(sizeof(char) * (len + 1));
   fread(buffer, len + 1, 1, file);
   buffer[len] = '\0';
 
@@ -50,7 +50,7 @@ void str_replace(char **str_ptr, const char *search, const char *replace)
 
   size_t found = 0;
 
-  char *pos = str;
+  char *pos = 0;
   char *rest_pos = str;
   char *last_pos = str + str_size;
 
@@ -62,10 +62,10 @@ void str_replace(char **str_ptr, const char *search, const char *replace)
   size_t diff = replace_size - search_size;
   size_t new_str_size = str_size + (found * diff);
 
-  char *new_str = (char *)malloc(sizeof(char) * new_str_size + 1);
+  char *new_str = malloc(sizeof(char) * new_str_size + 1);
   new_str[0] = '\0';
 
-  pos = str;
+  pos = 0;
   rest_pos = str;
 
   while ((pos = strstr(rest_pos, search)) != 0) {
@@ -102,7 +102,7 @@ char *compile_template(const char *shader_name, const char *shader_code)
   size_t code_size = strlen(shader_code);
   size_t compiled_size = template_size - 10 + (name_size + code_size);
 
-  char *compiled = (char *)malloc(sizeof(char) * compiled_size);
+  char *compiled = malloc(sizeof(char) * compiled_size);
   compiled[0] = '\0';
 
   char *name_pos = strstr(shader_template, "$NAME");
@@ -129,8 +129,12 @@ char *generate_c_file(char **compiled_templates, int length)
     total_bytes += strlen(compiled_templates[i]);
 
   total_bytes += length; // new line characters
+  if (total_bytes <= 0) {
+    printf("No shader files detected!\n");
+    return 0;
+  }
 
-  c_file_content = (char *)malloc(sizeof(char) * total_bytes);
+  c_file_content = malloc(sizeof(char) * total_bytes);
   c_file_content[0] = '\0';
   if (!c_file_content) {
     perror("c_file_content malloc failed");
@@ -168,13 +172,13 @@ main(int argc, char **argv)
       continue;
     }
 
-    char *shader_name = (char *)malloc(sizeof(char) * name_len + 7);
+    char *shader_name = malloc(sizeof(char) * name_len + 7);
     strcpy(shader_name, "shader_");
     strcpy(shader_name + 7, entry->d_name);
 
     *(shader_name + 7 + (ext_pos - 1)) = '_';
 
-    char *shader_path = (char *)malloc(sizeof(char) * (strlen(shader_dir_path) + name_len + 1));
+    char *shader_path = malloc(sizeof(char) * (strlen(shader_dir_path) + name_len + 1));
     strcpy(shader_path, shader_dir_path);
     strcat(shader_path, "/");
     strcat(shader_path, entry->d_name);

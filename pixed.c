@@ -114,12 +114,13 @@ void            pixed_editor_dispatch_tool(void);
 void            input_key_event_push(int key, int scancode, int action, int mode);
 key_event      *input_key_event_peek(void);
 void            input_key_event_consume(void);
-void            input_keyboard_buffer_free(void);
 
 void            input_mouse_event_push(mouse_event_action action, int x, int y, int button, int mods);
 mouse_event    *input_mouse_event_peek(void);
 void            input_mouse_event_consume(void);
-void            input_mouse_buffer_free(void);
+
+void            input_system_initialize(void);
+void            input_system_destroy(void);
 
 bool            tool_pan_initialize(tool *);
 bool            tool_pan_on_key_up(tool *, key_event *);
@@ -159,10 +160,10 @@ static tool tool_lookup[TOOL_MAX] = {
 pixed_editor *
 pixed_editor_new()
 {
-  pixed_editor * editor = (pixed_editor *)malloc(sizeof(pixed_editor));
+  pixed_editor * editor = malloc(sizeof(pixed_editor));
   editor->document = 0;
   editor->active_tool = &tool_lookup[TOOL_IDLE];
-  editor->graphics = (graphics_context *)malloc(sizeof(graphics_context));
+  editor->graphics = malloc(sizeof(graphics_context));
   editor->zoom = 10.0f;
   editor->pan_x = 0;
   editor->pan_y = 0;
@@ -194,41 +195,37 @@ pixed_editor_dispatch_tool()
 
   // Handle key event
   if (key_e) {
-    bool consume_input = false;
+    bool input_used = false;
 
     switch (key_e->action) {
     case GLFW_PRESS:
       if (active_tool->on_key_down)
-        consume_input = active_tool->on_key_down(active_tool, key_e);
+        input_used = active_tool->on_key_down(active_tool, key_e);
       break;
 
     case GLFW_RELEASE:
       if (active_tool->on_key_up)
-        consume_input = active_tool->on_key_up(active_tool, key_e);
+        input_used = active_tool->on_key_up(active_tool, key_e);
       break;
 
     case GLFW_REPEAT:
       if (active_tool->on_key_repeat)
-        consume_input = active_tool->on_key_repeat(active_tool, key_e);
+        input_used = active_tool->on_key_repeat(active_tool, key_e);
       break;
 
     default:
       break;
     }
 
-    if (consume_input){
-      input_key_event_consume();
-    } else if (active_tool == &tool_lookup[TOOL_IDLE] && key_e->action == GLFW_PRESS) {
+    if (!input_used && active_tool == &tool_lookup[TOOL_IDLE] && key_e->action == GLFW_PRESS) {
       // Key presses in idle tool may activate other tools
       switch (key_e->key) {
       // Pan tool
       case GLFW_KEY_SPACE:
         new_tool = &tool_lookup[TOOL_PAN];
-        input_key_event_consume();
         break;
 
       default:
-        input_key_event_consume();
         break;
       }
 
@@ -244,10 +241,10 @@ pixed_editor_dispatch_tool()
         } else {
           editor->active_tool = new_tool;
         }
-      }      
-    } else {
-      input_key_event_consume();
+      }
     }
+    
+    input_key_event_consume();
   }
 
   if (new_tool == 0 && mouse_e != 0) {
@@ -287,7 +284,7 @@ pixed_editor_dispatch_tool()
 void
 input_key_event_push(int key, int scancode, int action, int mode)
 {
-  key_event *key_e = (key_event *)malloc(sizeof(key_event));
+  key_event *key_e = malloc(sizeof(key_event));
   if (!key_e) {
     perror("ERROR: Allocating key event failed");
     return;
@@ -335,24 +332,9 @@ input_key_event_consume()
 }
 
 void
-input_keyboard_buffer_free()
-{
-  key_event *temp = 0;
-  key_event *key_e = keyboard_buffer->head;
-  
-  while (key_e != 0) {
-    temp = key_e->next;
-    free(key_e);
-    key_e = temp;
-  }
-
-  keyboard_buffer->last = 0;
-}
-
-void
 input_mouse_event_push(mouse_event_action action, int x, int y, int button, int mods)
 {
-  mouse_event *mouse_e = (mouse_event *)malloc(sizeof(mouse_event));
+  mouse_event *mouse_e = malloc(sizeof(mouse_event));
   if (!mouse_e) {
     perror("ERROR: Allocating key event failed");
     return;
@@ -401,15 +383,40 @@ input_mouse_event_consume()
 }
 
 void
-input_mouse_buffer_free()
+input_system_initialize()
 {
-  mouse_event *temp = 0;
+  keyboard_buffer = malloc(sizeof(key_event_buffer));
+  keyboard_buffer->head = 0;
+  keyboard_buffer->last = 0;
+
+  mouse_buffer = malloc(sizeof(mouse_event_buffer));
+  mouse_buffer->head = 0;
+  mouse_buffer->last = 0;
+}
+
+void
+input_system_destroy()
+{
+  // Free keyboard buffer
+  key_event *key_tmp = 0;
+  key_event *key_e = keyboard_buffer->head;
+  
+  while (key_e != 0) {
+    key_tmp = key_e->next;
+    free(key_e);
+    key_e = key_tmp;
+  }
+
+  keyboard_buffer->last = 0;
+
+  // Free mouse buffer
+  mouse_event *mouse_tmp = 0;
   mouse_event *mouse_e = mouse_buffer->head;
 
   while (mouse_e != 0) {
-    temp = mouse_e->next;
+    mouse_tmp = mouse_e->next;
     free(mouse_e);
-    mouse_e = temp;
+    mouse_e = mouse_tmp;
   }
 
   mouse_buffer->last = 0;
@@ -418,7 +425,7 @@ input_mouse_buffer_free()
 bool
 tool_pan_initialize(tool *pan)
 {
-  tool_pan_state *state = (tool_pan_state *)malloc(sizeof(tool_pan_state));
+  tool_pan_state *state = malloc(sizeof(tool_pan_state));
   if (!state) {
     perror("ERROR: Pan tool initialization failed");
     return false;
@@ -558,7 +565,7 @@ graphics_init()
   {
     /* TODO: Make this dynamic allocation to keep it in graphics context */
     size_t buffer_len = (document->width * document->height) * FLOAT_PER_PIXEL_VERTEX;
-    GLfloat *buffer = (GLfloat *)malloc(sizeof(GLfloat) * buffer_len);
+    GLfloat *buffer = malloc(sizeof(GLfloat) * buffer_len);
 
     uint32_t pixel_color = 0;
     int row = 0, col = 0, offset = 0;
@@ -718,8 +725,7 @@ int main(int argvc, char **argv)
 {
   window = window_create(800, 800);
 
-  mouse_buffer = (mouse_event_buffer *)malloc(sizeof(mouse_event_buffer));
-  keyboard_buffer = (key_event_buffer *)malloc(sizeof(key_event_buffer));
+  input_system_initialize();
 
   editor = pixed_editor_new();
 
@@ -742,8 +748,7 @@ int main(int argvc, char **argv)
   }
 
   pixed_editor_free();
-  input_mouse_buffer_free();
-  input_keyboard_buffer_free();
+  input_system_destroy();
 
   glfwTerminate();
   return 0;

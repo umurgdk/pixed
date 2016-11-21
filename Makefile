@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall --std=c99 -g
+CFLAGS=-Wall --std=c99 -g -I/usr/local/include
 OUT_DIR=build
 
 all: pixed
@@ -14,7 +14,7 @@ shader_compiler: shader_compiler.c
 	$(CC) shader_compiler.c -o ./shader_compiler -g
 
 libglutil.o: libglutil.c
-	$(CC) -c $(CFLAGS) libglutil.c
+	$(CC) -c $(CFLAGS) libglutil.c `pkg-config --cflags glew`
 
 libpixed.o: libpixed.c
 	$(CC) -c $(CFLAGS) libpixed.c

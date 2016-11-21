@@ -53,7 +53,7 @@ inline
 lookup_table *
 _lookup_table_new(uint8_t id, size_t value_size)
 {
-  lookup_table *_lookup_table = (lookup_table *)malloc(sizeof(lookup_table));
+  lookup_table *_lookup_table = malloc(sizeof(lookup_table));
   if (!_lookup_table)
     return 0;
 

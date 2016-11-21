@@ -11,11 +11,11 @@ int write_uint32_big_endian(FILE *, uint32_t);
 struct pixed_document *
 pixed_document_new(const char *name, uint32_t width, uint32_t height)
 {
-	struct pixed_document *document = (struct pixed_document *)malloc(sizeof(struct pixed_document));
+	struct pixed_document *document = malloc(sizeof(struct pixed_document));
 	if (!document)
 		return 0;
 
-	document->name = (char *)malloc(sizeof(char) * strlen(name));
+	document->name = malloc(sizeof(char) * strlen(name));
 	if (!document->name) {
 		free(document);
 		return 0;
@@ -23,7 +23,7 @@ pixed_document_new(const char *name, uint32_t width, uint32_t height)
 
 	strncpy(document->name, name, sizeof(char) * strlen(name));
 
-	document->canvas = (uint32_t *)malloc(sizeof(uint32_t) * (width * height));
+	document->canvas = malloc(sizeof(uint32_t) * (width * height));
 	if (!document->canvas) {
 		free(document->name);
 		free(document);
@@ -99,7 +99,7 @@ pixed_document_read_file(const char *file_name)
 	document = pixed_document_new(file_name, width, height);
 
 	uint32_t pixels_length = width * height;
-	document->canvas = (uint32_t *)malloc(sizeof(uint32_t) * pixels_length);
+	document->canvas = malloc(sizeof(uint32_t) * pixels_length);
 	if (!document->canvas) {
 		pixed_document_free(document);
 		fclose(file);
